@@ -65,6 +65,28 @@ def clear_vector_database(pc, inx):
         delete.all==True
     )
 
+
+def generate_response(database):
+    llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
+
+    # setting up retreival
+    qa_ans = RetrievalQA.from_chain_type(
+        llm = llm,
+        chain_type = 'stuff',
+        retriever = database.as_retriever(),
+        return_source_documents = True,
+        verbose=True,
+    )
+
+    # Develop query for searching documents
+    with open("./docs/user_query.txt", "r", encoding='utf-8') as f:
+        question = f.read()
+
+    # Testing the model
+    response = qa_ans(question)
+
+    return response
+
 def main():
     print("starting up")
 
@@ -119,25 +141,8 @@ def main():
             embedding = embeddings,
             index_name = INDEX_NAME,
         )
-    llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
-    # setting up retreival
-    qa_ans = RetrievalQA.from_chain_type(
-        llm = llm,
-        chain_type = 'stuff',
-        retriever = database.as_retriever(),
-        return_source_documents = True,
-        verbose=True,
-    )
-
-    # Develop query for searching documents
-    # file_path = os.path.dirname(os.path.abspath(__file__))
-    with open("./docs/user_query.txt", "r", encoding='utf-8') as f:
-        question = f.read()
-    # question = "What are Donald Trump's major achievements as the president?"
-
-    # Testing the model
-    response = qa_ans(question)
+    response = generate_response(database)
 
     with open('./docs/response_dict.pkl', 'wb') as f:
         pickle.dump(response, f)
