@@ -52,10 +52,9 @@ if uploaded_docs:
         with open(os.path.join(target_folder, uploaded_file.name), 'wb') as f:
             f.write(uploaded_file.getbuffer())
 
-    df_display["No."] = [(i+1) for i in range(len(file_name))]
-    df_display["File Name"] = pd.Series(file_name)
-    df_display["File Type"] = pd.Series(file_type)
-    df_display["File_size"] = pd.Series(file_size)
+    df_display["Name"] = pd.Series(file_name)
+    df_display["Type"] = pd.Series(file_type)
+    df_display["Size"] = pd.Series(file_size)
     st.markdown(" **Your uploaded file(s) are: ** ")
     st.dataframe(df_display)
 
