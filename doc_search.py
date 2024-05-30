@@ -1,6 +1,7 @@
 import os
 import pickle
 import pathlib
+import tiktoken 
 from os import listdir
 from dotenv import load_dotenv
 from os.path import isfile, join
@@ -49,6 +50,12 @@ loaders = {
     '.pptx': UnstructuredPowerPointLoader,
 }
   
+def count_tokens(string: str, encoding_name: str) -> int:
+    """Returns the number of tokens in a text string."""
+
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
 
 # directory loader to map all uploded files
 def create_directory_loader(file_type: str):
@@ -70,22 +77,22 @@ def create_directory_loader(file_type: str):
         )
 
 # Clearning Pinecone index for repetitive useage
-def clear_vectorDB(pnc_key: str, pnc_inx: str):
+# def clear_vectorDB(pnc_key: str, pnc_inx: str):
     
-    # deleting the existing inex
-    pc = Pinecone(api_key=pnc_key)
-    pc.delete_index(pnc_inx)
+#     # deleting the existing inex
+#     pc = Pinecone(api_key=pnc_key)
+#     pc.delete_index(pnc_inx)
 
-    # recreating the deleted index for use
-    pc.create_index(
-        name = pnc_inx,
-        dimension = 1536,
-        metric = "cosine",
-        spec = ServerlessSpec(
-            cloud = "aws",
-            region = "us-east-1"
-        )
-    )
+#     # recreating the deleted index for use
+#     pc.create_index(
+#         name = pnc_inx,
+#         dimension = 1536,
+#         metric = "cosine",
+#         spec = ServerlessSpec(
+#             cloud = "aws",
+#             region = "us-east-1"
+#         )
+#     )
 
 def get_documents():
 
@@ -98,12 +105,22 @@ def get_documents():
     documents = []
     for each in my_files:
         file_extension = pathlib.Path(each).suffix
+
         print(file_extension)
         if file_extension not in SUPPORTED_EXTENSIONS:
             raise ValueError(f"The uploaded file type {file_extension} is not withing the permissible extensions")
-        documents.extend(create_directory_loader(file_extension).load())
 
-    # spliting documents text
+        documents.extend(create_directory_loader(file_extension).load())
+        
+        # spliting documents text
+        this_doc = create_directory_loader(file_extension).load()
+        text_splitter = CharacterTextSplitter(chunk_size = 1000, chunk_overlap=50)
+        split_content = text_splitter.split_documents(this_doc)
+        content_str = " ".join([i.page_content for i in split_content])
+        tkn_cnt = count_tokens(content_str, encoding_name="cl100k_base")
+
+        print(f"Document {each} has token count {tkn_cnt}")
+
 
     return documents    # return a lis
 
@@ -129,23 +146,23 @@ def create_memory_database():
         
     return database   # return a directory 
 
-def create_pinecone_database(pnc_key: str, pnc_indx: str):
+# def create_pinecone_database(pnc_key: str, pnc_indx: str):
     
-    print("I am now working on Pinecone")
+#     print("I am now working on Pinecone")
     
-    documents = get_documents()
-    pc = Pinecone(api_key=str(pnc_key))
+#     documents = get_documents()
+#     pc = Pinecone(api_key=str(pnc_key))
 
-    # clean Pinecone VectorStore for another round of use
-    # clear_vectorDB(pnc_key, pnc_indx)
+#     # clean Pinecone VectorStore for another round of use
+#     # clear_vectorDB(pnc_key, pnc_indx)
 
-    # creating vector database
-    database = PineconeVectorStore.from_documents(
-        documents = documents,
-        embedding = embeddings,
-        index_name = pnc_indx
-    )
-    return database # return a directory
+#     # creating vector database
+#     database = PineconeVectorStore.from_documents(
+#         documents = documents,
+#         embedding = embeddings,
+#         index_name = pnc_indx
+#     )
+#     return database # return a directory
 
 
 def retrieve_searches(database, query: str):
@@ -172,13 +189,13 @@ def search_results_memory(query: str):
     
     return response     # return a directory    
 
-def search_results_extdb(query: str, pnc_key: str, pnc_indx: str):
+# def search_results_extdb(query: str, pnc_key: str, pnc_indx: str):
     
-    print("I am in search results function now")
+#     print("I am in search results function now")
     
-    database_package = create_pinecone_database(pnc_key, pnc_indx)
-    response = retrieve_searches(database_package, query)
+#     database_package = create_pinecone_database(pnc_key, pnc_indx)
+#     response = retrieve_searches(database_package, query)
     
-    print("Final output received successfully in main file")
+#     print("Final output received successfully in main file")
     
-    return response     # return a directory   
+#     return response     # return a directory   
