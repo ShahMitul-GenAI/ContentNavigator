@@ -70,7 +70,8 @@ with st.form(key="data_extractor", clear_on_submit=False):
     # get the input about search query
     st.session_state.user_inputs = st.text_input(
         label = "Please key-in what you want to search from the pool of above documents (max: 100 characters).",
-        max_chars = 100)
+        max_chars = 100
+    )
 
     # submit action
     submit_button_1 = st.form_submit_button("Submit")
@@ -94,11 +95,13 @@ if submit_button_1:
                     pnc_key  = st.text_input(
                         label = "Please input your Pinecone API Key",
                         max_chars = 100,
-                        type = password)
+                        type = password
+                    )
 
                     pnc_index = st.text_input(
                         label = "Plese input your Pinecone Index Name",
-                        max_char = 150)
+                        max_char = 150
+                    )
 
                     pnc.extend([pnc_key, pnc_index])
                     st.session_state.credentials.append(pnc)
@@ -114,20 +117,3 @@ if submit_button_1:
     st.write(loaded_dict['result'])
     st.markdown(" \n**The source documents are: ** ")
     st.write(loaded_dict['source_documents'])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
