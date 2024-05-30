@@ -66,6 +66,24 @@ def clear_vector_database(pc, inx):
     )
 
 
+def load_documents():
+    # Get file type
+    my_files = [f for f in listdir(file_path) if isfile(join(file_path, f))]
+
+    # Define a function to create a DirectoryLoader to load text from different formats
+    # https://github.com/langchain-ai/langchain/discussions/18559
+    # https://github.com/langchain-ai/langchain/discussions/9605
+
+    # gathering file contents
+    documents = []
+    for file in my_files:
+        print(file)
+        file_extension = pathlib.Path(file).suffix
+        documents.extend(create_directory_loader(file_extension).load())
+
+    return documents
+
+
 def generate_response(database):
     llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
@@ -90,24 +108,7 @@ def generate_response(database):
 def main():
     print("starting up")
 
-    # Get file type
-    my_files = [f for f in listdir(file_path) if isfile(join(file_path, f))]
-
-    # Define a function to create a DirectoryLoader to load text from different formats
-    # https://github.com/langchain-ai/langchain/discussions/18559
-    # https://github.com/langchain-ai/langchain/discussions/9605
-
-    # gathering file contents
-    documents = []
-    for file in my_files:
-        print(file)
-        file_extension = pathlib.Path(file).suffix
-        documents.extend(create_directory_loader(file_extension).load())
-
-    # spliting documents text
-    text_splitter = CharacterTextSplitter(chunk_size = 1000, chunk_overlap=50)
-    split_content = text_splitter.split_documents(documents)
-    print(f"Total {len(split_content)} text chunks created.")
+    documents = load_documents()
 
     # storing the content In-Memory Vector Store 
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
