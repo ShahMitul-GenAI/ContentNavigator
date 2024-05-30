@@ -4,11 +4,8 @@ from pathlib import Path
 import pickle
 import streamlit as st
 import pandas as pd
-from subprocess import call
+from docs_search_extractor import main
 
-# function to execute backend python file
-def run_file():
-    call(["python", "docs_search_extractor.py"])
 
 # function to export user inputs from form
 def export_inputs(data):
@@ -78,7 +75,11 @@ with st.form(key="data_extractor", clear_on_submit=False):
 if submit_button_1:
     export_inputs(st.session_state.user_inputs)
 
-    run_file()
+    query = st.session_state.user_inputs
+    print(f"Length of query: {len(query)}")
+    print(f"'{query}'")
+
+    main()
 
     # processing file
     file_check = target_folder + str("response_dict.pkl")
