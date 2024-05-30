@@ -1,0 +1,7 @@
+https://discuss.streamlit.io/t/nest-form-inside-regular-button/13758/3
+
+https://discuss.streamlit.io/t/how-to-do-nested-button-and-print-both-button-outputs/33741/2
+
+https://discuss.streamlit.io/t/session-state-introduction/33462/8
+
+https://discuss.streamlit.io/t/submit-form-button-not-working/35059/2
