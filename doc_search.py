@@ -84,7 +84,7 @@ def load_documents():
     return documents
 
 
-def generate_response(database):
+def generate_response(search_query, database):
     llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
     # setting up retreival
@@ -97,17 +97,18 @@ def generate_response(database):
     )
 
     # Develop query for searching documents
-    with open("./docs/user_query.txt", "r", encoding='utf-8') as f:
-        question = f.read()
+    # with open("./docs/user_query.txt", "r", encoding='utf-8') as f:
+    #     query = f.read()
+
+    # assert passed_query == query
 
     # Testing the model
-    response = qa_ans(question)
+    response = qa_ans(search_query)
 
     return response
 
-def main():
-    print("starting up")
 
+def main(query):
     documents = load_documents()
 
     # storing the content In-Memory Vector Store 
@@ -143,12 +144,12 @@ def main():
             index_name = INDEX_NAME,
         )
 
-    response = generate_response(database)
+    response = generate_response(query, database)
 
-    with open('./docs/response_dict.pkl', 'wb') as f:
-        pickle.dump(response, f)
     print(response['result'])
     print(response['source_documents'])
+
+    return response
 
 if __name__ == "__main__":
     main()
