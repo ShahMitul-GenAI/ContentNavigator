@@ -3,7 +3,7 @@ from pathlib import Path
 import streamlit as st
 from streamlit import session_state as ss 
 import pandas as pd
-from doc_search import main, pincone_output
+from doc_search.doc_search import main, pincone_output
 import shutil
 
 # check for environment file
