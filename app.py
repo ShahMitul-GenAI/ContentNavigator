@@ -5,23 +5,30 @@ import pickle
 import streamlit as st
 import pandas as pd
 from doc_search import main
+import shutil
 
 # clearing previously loaded pool of docs
 target_folder = Path(__file__).resolve().parent / "docs/"
-delete_files = [f.unlink() for f in Path(str(target_folder)).iterdir() if f.is_file()]
+
+if target_folder.exists():
+    shutil.rmtree(target_folder)
+
+target_folder.mkdir(parents=True, exist_ok=True)
+
+with open(target_folder / "user_query.txt", "w") as fp:
+    fp.write("N/A")
 
 # function to export user inputs from form
-def export_inputs(data):
-    if type(data) == str:
-        st.session_state.user_inputs = data
-        print(data)
-        with open(target_folder / "user_query.txt", "w", encoding='utf-8') as fp:
-            fp.write(st.session_state.user_inputs)
-            # fp.write("N/A")
-    elif type(data) == list:
-        st.session_state.credentials = data[:]
-        with open(target_folder / "pnc_vals.pkl", "wb") as fb:
-            pickle.dump(st.session_state.credentials, fb)
+# def export_inputs(data):
+#     if type(data) == str:
+#         # st.session_state.user_inputs = data
+#         print(data)
+#         #     fp.write('the')
+#             # fp.write(st.session_state.user_inputs)
+#     elif type(data) == list:
+#         st.session_state.credentials = data[:]
+#         with open(target_folder / "pnc_vals.pkl", "wb") as fb:
+#             pickle.dump(st.session_state.credentials, fb)
 
 # function to execute backend python file
 st.title("User inputs for content search in multiple documents")
@@ -74,7 +81,7 @@ with st.form(key="data_extractor", clear_on_submit=False):
 
 if submit_button_1:
     query = st.session_state.user_inputs
-    export_inputs(st.session_state.user_inputs)
+    # export_inputs(st.session_state.user_inputs)
     # print(f"Length of query: {len(query)}")
     # print(f"'{query}'")
 

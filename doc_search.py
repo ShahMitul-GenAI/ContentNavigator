@@ -69,6 +69,7 @@ def clear_vector_database(pc, inx):
 def load_documents():
     # Get file type
     my_files = [f for f in listdir(file_path) if isfile(join(file_path, f))]
+    print(my_files)
 
     # Define a function to create a DirectoryLoader to load text from different formats
     # https://github.com/langchain-ai/langchain/discussions/18559
@@ -76,8 +77,8 @@ def load_documents():
 
     # gathering file contents
     documents = []
+
     for file in my_files:
-        print(file)
         file_extension = pathlib.Path(file).suffix
         documents.extend(create_directory_loader(file_extension).load())
 
