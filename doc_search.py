@@ -1,14 +1,11 @@
 import os
 from os import listdir
 from os.path import isfile, join
-import pickle
 import pathlib
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import DocArrayInMemorySearch
-from langchain_community.document_loaders.word_document import UnstructuredWordDocumentLoader
 from langchain_community.document_loaders import PyPDFLoader, CSVLoader, JSONLoader, TextLoader, UnstructuredFileLoader, DirectoryLoader, \
     Docx2txtLoader, UnstructuredPowerPointLoader
 
@@ -20,7 +17,11 @@ from langchain.chains import RetrievalQA
 load_dotenv()
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
-INDEX_NAME = os.environ.get("INDEX_NAME")
+PINECONE_INDEX = os.environ.get("PINECONE_INDEX")
+
+# setting up LLM and Embeddings
+llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
+embeddings = OpenAIEmbeddings(openai_api_key=str(OPENAI_API_KEY))
 
 # Provide file path & definingn functions  
 file_path = "./docs/"
@@ -59,21 +60,27 @@ def create_directory_loader(file_type):
 
 
 # Clearning Pinecone index for repetitive useage
-def clear_vector_database(pc, inx):
-    index = pc.Index(inx)
-    index.delete(
-        delete.all==True
+def clear_vectorDB(pnc_key: str, pnc_inx: str):
+
+    # deleting the existing inex
+    pc = Pinecone(api_key=str(pnc_key))
+    pc.delete_index(pnc_inx)
+
+    # recreating the deleted index for use
+    pc.create_index(
+        name = pnc_inx,
+        dimension = 1536,
+        metric = "cosine",
+        spec = ServerlessSpec(
+            cloud = "aws",
+            region = "us-east-1"
+        )
     )
 
 
 def load_documents():
     # Get file type
     my_files = [f for f in listdir(file_path) if isfile(join(file_path, f))]
-    print(my_files)
-
-    # Define a function to create a DirectoryLoader to load text from different formats
-    # https://github.com/langchain-ai/langchain/discussions/18559
-    # https://github.com/langchain-ai/langchain/discussions/9605
 
     # gathering file contents
     documents = []
@@ -86,7 +93,6 @@ def load_documents():
 
 
 def generate_response(search_query, database):
-    llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo")
 
     # setting up retreival
     qa_ans = RetrievalQA.from_chain_type(
@@ -94,63 +100,40 @@ def generate_response(search_query, database):
         chain_type = 'stuff',
         retriever = database.as_retriever(),
         return_source_documents = True,
-        verbose=True,
+        verbose=False,
     )
-
-    # Develop query for searching documents
-    # with open("./docs/user_query.txt", "r", encoding='utf-8') as f:
-    #     query = f.read()
-
-    # assert passed_query == query
-
-    # Testing the model
     response = qa_ans(search_query)
-
     return response
 
 
 def main(query):
     documents = load_documents()
 
-    # storing the content In-Memory Vector Store 
-    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-    try:
-        database = DocArrayInMemorySearch.from_documents(
-            documents,
-            embeddings,
+    database = DocArrayInMemorySearch.from_documents(
+        documents,
+        embeddings,
         )
-        print("The content pool is small enough to be handled by the local database is used to handle the query")
-    except:
-        print("The content pool is large enough to be handled by the local database. \n")
-        print("Pinecone Vector Database is now used for embedding & retrieval")
-        
-        flrg = open(str(file_path) + "LARGE.txt", "wb")
-        pickle.dump(123, flrg)
-        
-        # getting Pinecone credentials from the server
-        pnc = []
-        pnc = pd.read_pickle(str(file_path) + "pnc_vals.pkl")
-
-        if len(pnc) > 0:
-            pc = Pinecone(api_key=os.environ.get(pnc[0]))
-            INDEX_NAME = pnc[1]
-        else:
-            pc = Pinecone(api_key=os.environ.get("PINECONE_API_KEY"))
-            INDEX_NAME = INDEX_NAME
-        
-        clear_vector_database(pc, INDEX_NAME)
-        database = PineConeVectorStore.from_documents(
-            documents = documents,
-            embedding = embeddings,
-            index_name = INDEX_NAME,
-        )
-
     response = generate_response(query, database)
-
-    print(response['result'])
-    print(response['source_documents'])
-
     return response
 
-if __name__ == "__main__":
-    main()
+def create_pinecone_database(pnc_key: str, pnc_indx: str):
+    
+    documents = load_documents()
+    pc = Pinecone(api_key=str(pnc_key))
+
+    # clean Pinecone VectorStore for another round of use
+    clear_vectorDB(pnc_key, pnc_indx)
+
+    # creating vector database
+    database = PineconeVectorStore.from_documents(
+        documents = documents,
+        embedding = embeddings,
+        index_name = pnc_indx
+    )
+    return database
+
+def pincone_output(query: str, pnc_key: str, pnc_indx: str):
+    
+    pnc_database = create_pinecone_database(str(PINECONE_API_KEY), str(PINECONE_INDEX))
+    response = generate_response(query, pnc_database)    
+    return response

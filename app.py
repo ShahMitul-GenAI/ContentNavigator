@@ -1,41 +1,53 @@
 import os
-import time
 from pathlib import Path
-import pickle
 import streamlit as st
+from streamlit import session_state as ss 
 import pandas as pd
-from doc_search import main
+from doc_search import main, pincone_output
 import shutil
+
+# check for environment file
+if not Path("./.env").is_file():
+    raise ValueError(st.write("Please create environment file with API keys per README"))
+
+# declaring session_state variables
+if 'user_inputs' not in ss:
+    ss.user_inputs = ""
+
+
+# extract source documents info
+def get_meatadata(source_docs):
+    metadata_info = []
+    for each in source_docs:
+        doc_meta = each.metadata['source']
+        metadata_info.append(doc_meta)
+    return set(metadata_info)
+
+
+# display final results
+def display_output(output):
+    st.markdown(" ### The search results: \n")
+    st.write(output['result'])
+    st.markdown(" ### The source documents are: \n")
+    st.write(get_meatadata(output["source_documents"]))
 
 # clearing previously loaded pool of docs
 target_folder = Path(__file__).resolve().parent / "docs/"
 
 if target_folder.exists():
     shutil.rmtree(target_folder)
-
 target_folder.mkdir(parents=True, exist_ok=True)
 
 with open(target_folder / "user_query.txt", "w") as fp:
     fp.write("N/A")
 
-# function to export user inputs from form
-# def export_inputs(data):
-#     if type(data) == str:
-#         # st.session_state.user_inputs = data
-#         print(data)
-#         #     fp.write('the')
-#             # fp.write(st.session_state.user_inputs)
-#     elif type(data) == list:
-#         st.session_state.credentials = data[:]
-#         with open(target_folder / "pnc_vals.pkl", "wb") as fb:
-#             pickle.dump(st.session_state.credentials, fb)
 
 # function to execute backend python file
-st.title("User inputs for content search in multiple documents")
-st.header("Provide the requested information")
+st.title("Content Navigator")
+st.header("Please select multiple documents for information search")
 
 uploaded_docs = st.file_uploader(
-    label="Please upload your files (Limit 100 MB per file, max 15 files)",
+    label="Please upload your files (Total Limit: 200 MB)",
     accept_multiple_files=True,
     type=['pdf', 'doc', 'docx', 'csv', 'json', 'txt', 'htm', 'html', 'ppt', 'pptx']
 )
@@ -61,61 +73,28 @@ if uploaded_docs:
     st.markdown(" **Your uploaded file(s) are: ** ")
     st.dataframe(df_display)
 
-# declaring  session_state variables
-if 'user_inputs' not in st.session_state:
-    st.session_state.user_inputs = ""
-if'credentials' not in st.session_state:
-    st.session_state['credentials'] = []
-
 # develop form
 with st.form(key="data_extractor", clear_on_submit=False):
     # get the input about search query
-    st.session_state.user_inputs = st.text_input(
+    ss.user_inputs = st.text_input(
         label = "Please key-in what you want to search from the pool of above documents (max: 100 characters).",
-        max_chars = 100
+        max_chars = 250
     )
 
     # submit action
     submit_button_1 = st.form_submit_button("Submit")
 
-
 if submit_button_1:
-    query = st.session_state.user_inputs
-    # export_inputs(st.session_state.user_inputs)
-    # print(f"Length of query: {len(query)}")
-    # print(f"'{query}'")
-
-    response = main(query)
-
-    st.success("Data Processing Complete!")
-    st.markdown(" **Your requested content is:** ")
-    st.write(response['result'])
-
-    # processing file
-    # file_check = target_folder + str("response_dict.pkl")
-
-    # with st.spinner("Processing your request....."):
-    #     while not os.path.exists(file_check):
-    #         time.sleep(3)
-    #         if os.path.exists(str(target_folder) + "LARGE.txt"):
-    #             pnc = []
-    #             st.write("Your document content pool is large enough to be handled by the local database. "
-    #                      "We must use Pinecone vector database for embedding and retrieval")
-    #             with st.form(key="VectorDB", clear_on_submit=True):
-    #                 pnc_key  = st.text_input(
-    #                     label = "Please input your Pinecone API Key",
-    #                     max_chars = 100,
-    #                     type = password
-    #                 )
-
-    #                 pnc_index = st.text_input(
-    #                     label = "Plese input your Pinecone Index Name",
-    #                     max_char = 150
-    #                 )
-
-    #                 pnc.extend([pnc_key, pnc_index])
-    #                 st.session_state.credentials.append(pnc)
-    #                 submit_button_2 = st.form_submit_button("Submit Info")
-
-    #             if submit_button_2:
-    #                 export_inputs(st.session_state.credentials)
+    try:
+        with st.spinner("Processing your informatoin..."):
+            output = main(ss.user_inputs)
+            
+            st.success("Data Processing Completed!")
+            # displaying output now
+            display_output(output)
+    
+    except ValueError:
+        with st.spinner("Processing your request....."):
+            output = pincone_output(ss.user_inputs)
+            st.success ("Data Processing Complete!")
+            display_output(output)
