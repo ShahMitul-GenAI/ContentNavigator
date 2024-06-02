@@ -7,20 +7,20 @@ import pandas as pd
 from doc_search import main
 
 # clearing previously loaded pool of docs
-target_folder = str(os.path.dirname(os.path.abspath(__file__))) + "/docs/"
+target_folder = Path(__file__).resolve().parent / "docs/"
 delete_files = [f.unlink() for f in Path(str(target_folder)).iterdir() if f.is_file()]
-del delete_files
 
 # function to export user inputs from form
 def export_inputs(data):
-    print(target_folder)
     if type(data) == str:
         st.session_state.user_inputs = data
-        with open(str(target_folder) + "user_query.txt", "w", encoding='utf-8') as fp:
+        print(data)
+        with open(target_folder / "user_query.txt", "w", encoding='utf-8') as fp:
             fp.write(st.session_state.user_inputs)
+            # fp.write("N/A")
     elif type(data) == list:
         st.session_state.credentials = data[:]
-        with open(str(target_folder) + "pnc_vals.pkl", "wb") as fb:
+        with open(target_folder / "pnc_vals.pkl", "wb") as fb:
             pickle.dump(st.session_state.credentials, fb)
 
 # function to execute backend python file
@@ -73,11 +73,10 @@ with st.form(key="data_extractor", clear_on_submit=False):
 
 
 if submit_button_1:
-    export_inputs(st.session_state.user_inputs)
-
     query = st.session_state.user_inputs
-    print(f"Length of query: {len(query)}")
-    print(f"'{query}'")
+    export_inputs(st.session_state.user_inputs)
+    # print(f"Length of query: {len(query)}")
+    # print(f"'{query}'")
 
     response = main(query)
 
