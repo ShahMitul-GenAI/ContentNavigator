@@ -13,7 +13,7 @@ Please note that by default, the app tries to use in-memory embedding for all do
 
 ## Demo
 
-We have split the UI into two pieces to accommodate details in snapshots.
+We split the UI into two pieces to accommodate details in snapshots.
 
 1. Multiple documents uploaded
 
