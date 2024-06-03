@@ -5,6 +5,7 @@ description = "Search user requested information from the pool of uploaded docum
 authors = ["ShahMitul-GenAI <replymitul@outlook.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [{include = "doc_search"}]
 
 [tool.poetry.dependencies]
 python = ">3.12, <3.13"
